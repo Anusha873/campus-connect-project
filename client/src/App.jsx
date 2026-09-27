@@ -6,6 +6,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 
 // Auth Pages
 import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -73,6 +74,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/" element={<RootRedirect />} />
 
           {/* Student Routes */}

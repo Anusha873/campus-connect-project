@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Student = require('../models/Student');
@@ -217,4 +218,160 @@ exports.changePassword = async (req, res) => {
       message: error.message || 'Error changing password',
     });
   }
+};
+
+// @desc    Register a new user (Student or Faculty)
+// @route   POST /api/auth/register
+// @access  Public
+exports.register = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      role = 'student',
+      department,
+      rollNumber,
+      studentId,
+      employeeId,
+      year = 1,
+      semester = 1,
+      section = 'A',
+      phone = '',
+      gender = 'Male',
+      dateOfBirth,
+    } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, and password',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long',
+      });
+    }
+
+    // Check existing email
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email address already exists',
+      });
+    }
+
+    // Resolve department
+    let targetDept = null;
+    if (department) {
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        targetDept = await Department.findById(department);
+      } else {
+        targetDept = await Department.findOne({
+          $or: [{ code: department.toUpperCase() }, { name: department }],
+        });
+      }
+    }
+    if (!targetDept) {
+      targetDept = await Department.findOne();
+    }
+
+    const assignedRole = role === 'faculty' ? 'faculty' : 'student';
+
+    // Create user
+    const user = await User.create({
+      email: email.toLowerCase().trim(),
+      password,
+      role: assignedRole,
+      isActive: true,
+      lastLogin: Date.now(),
+    });
+
+    let profileData = null;
+
+    if (assignedRole === 'student') {
+      const generatedRoll = rollNumber
+        ? rollNumber.toUpperCase().trim()
+        : `CC${Date.now().toString().slice(-6)}`;
+      const generatedId = studentId
+        ? studentId.toUpperCase().trim()
+        : `STU${Date.now().toString().slice(-6)}`;
+
+      const student = await Student.create({
+        user: user._id,
+        studentId: generatedId,
+        rollNumber: generatedRoll,
+        name: name.trim(),
+        email: user.email,
+        phone: phone || '',
+        gender: gender || 'Male',
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : new Date('2003-01-01'),
+        department: targetDept?._id,
+        course: 'B.Tech',
+        year: Number(year) || 1,
+        semester: Number(semester) || 1,
+        section: section || 'A',
+        admissionYear: new Date().getFullYear(),
+        parentName: (req.body.parentName || `${name.trim()} Guardian`).trim(),
+        parentPhone: (req.body.parentPhone || phone || 'Not Provided').trim(),
+      });
+
+      profileData = await Student.findById(student._id).populate('department', 'name code');
+    } else {
+      const genFacultyId = employeeId
+        ? employeeId.toUpperCase().trim()
+        : `FAC${Date.now().toString().slice(-5)}`;
+
+      const faculty = await Faculty.create({
+        user: user._id,
+        facultyId: genFacultyId,
+        name: name.trim(),
+        email: user.email,
+        phone: phone || '',
+        gender: gender || 'Male',
+        department: targetDept?._id,
+        designation: 'Assistant Professor',
+        joiningDate: new Date(),
+        qualification: 'M.Tech / Ph.D',
+      });
+
+      profileData = await Faculty.findById(faculty._id).populate('department', 'name code');
+    }
+
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        profilePhoto: user.profilePhoto,
+        lastLogin: user.lastLogin,
+        profile: profileData,
+      },
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error during registration',
+    });
+  }
+};
+
+// @desc    Logout user / clear session
+// @route   POST /api/auth/logout
+// @access  Public
+exports.logout = async (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Logged out successfully',
+  });
 };

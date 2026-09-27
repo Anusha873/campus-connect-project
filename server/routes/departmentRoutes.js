@@ -9,7 +9,8 @@ const {
 } = require('../controllers/departmentController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
 
-router.get('/', protect, getDepartments);
+// Public endpoint for department listings (registration, academic info)
+router.get('/', getDepartments);
 router.get('/:id', protect, getDepartmentById);
 router.post('/', protect, authorizeRoles('admin'), createDepartment);
 router.put('/:id', protect, authorizeRoles('admin'), updateDepartment);

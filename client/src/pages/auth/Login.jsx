@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   GraduationCap,
@@ -155,6 +155,17 @@ const Login = () => {
               )}
             </button>
           </form>
+
+          {/* Registration Link */}
+          <div className="mt-4 text-center text-xs text-slate-600">
+            Don't have an institutional account?{' '}
+            <Link
+              to="/register"
+              className="font-bold text-indigo-600 hover:text-indigo-800 underline transition-colors"
+            >
+              Register as Student / Faculty
+            </Link>
+          </div>
 
           {/* 1-Click Fast Demo Login Buttons */}
           <div className="mt-8 pt-6 border-t border-slate-100">

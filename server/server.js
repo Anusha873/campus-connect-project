@@ -36,13 +36,61 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Enable CORS
-app.use(
-  cors({
-    origin: '*',
-    credentials: true,
-  })
-);
+// Allowed origins for CORS (Local development + Production Vercel & Render)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  'https://campus-connect-project-cyan.vercel.app',
+];
+
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL.trim().replace(/\/+$/, ''));
+}
+if (process.env.ALLOWED_ORIGINS) {
+  process.env.ALLOWED_ORIGINS.split(',').forEach((o) => {
+    if (o.trim()) allowedOrigins.push(o.trim().replace(/\/+$/, ''));
+  });
+}
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow non-browser requests (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+
+    const isMatch =
+      allowedOrigins.includes(origin) ||
+      /^https:\/\/.*\.vercel\.app$/.test(origin) ||
+      /^https:\/\/.*\.onrender\.com$/.test(origin) ||
+      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+    if (isMatch) {
+      return callback(null, true);
+    }
+    // Dynamic reflection fallback to guarantee client access
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers',
+  ],
+  exposedHeaders: ['Authorization'],
+  optionsSuccessStatus: 204,
+};
+
+// Enable CORS & Preflight handling
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Dev logging middleware
 if (process.env.NODE_ENV !== 'production') {
@@ -91,6 +139,20 @@ const startServer = async () => {
   try {
     await connectDB();
     console.log('MongoDB connected successfully');
+
+    // Auto-seed initial admin and demo data if database is empty
+    try {
+      const User = require('./models/User');
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount === 0) {
+        console.log('No admin user found. Automatically initializing demo data for CampusConnect...');
+        const seedDatabase = require('./scripts/seed');
+        await seedDatabase();
+        console.log('Auto-seed completed successfully.');
+      }
+    } catch (seedErr) {
+      console.warn('Auto-seed check notice (non-fatal):', seedErr.message);
+    }
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

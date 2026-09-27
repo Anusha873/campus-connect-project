@@ -1,4 +1,5 @@
 import React from 'react';
+import { getApiBaseUrl } from '../../services/api';
 import {
   FileSpreadsheet,
   Download,
@@ -43,7 +44,8 @@ const AdminReports = () => {
 
   const handleDownloadCSV = (endpoint, filename) => {
     const token = localStorage.getItem('campusconnect_token');
-    const url = `http://localhost:5000${endpoint}`;
+    const baseUrl = getApiBaseUrl().replace(/\/api$/, '');
+    const url = `${baseUrl}${endpoint}`;
     
     // Fetch with authorization header and trigger file download
     fetch(url, {

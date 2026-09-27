@@ -52,13 +52,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Register handler
+  const register = async (userData) => {
+    try {
+      const res = await api.post('/auth/register', userData);
+      if (res.data.success) {
+        const { token: receivedToken, user: receivedUser } = res.data;
+        localStorage.setItem('campusconnect_token', receivedToken);
+        localStorage.setItem('campusconnect_user', JSON.stringify(receivedUser));
+        setToken(receivedToken);
+        setUser(receivedUser);
+        return { success: true, user: receivedUser };
+      }
+      return { success: false, message: res.data.message || 'Registration failed' };
+    } catch (error) {
+      const message =
+        error.response?.data?.message || error.message || 'Network error occurred during registration';
+      return { success: false, message };
+    }
+  };
+
   // Logout handler
-  const logout = () => {
-    localStorage.removeItem('campusconnect_token');
-    localStorage.removeItem('campusconnect_user');
-    setToken(null);
-    setUser(null);
-    window.location.href = '/login';
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      // Non-fatal if backend logout call errors
+    } finally {
+      localStorage.removeItem('campusconnect_token');
+      localStorage.removeItem('campusconnect_user');
+      setToken(null);
+      setUser(null);
+      window.location.href = '/login';
+    }
   };
 
   // Update user in state
@@ -79,6 +105,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!token && !!user,
         loading,
         login,
+        register,
         logout,
         updateUser,
       }}

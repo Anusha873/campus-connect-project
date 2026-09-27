@@ -746,11 +746,21 @@ const seedDatabase = async () => {
     console.log('  Student 4 (ECE Y3 S5 Sec A):       akash.mukherjee@campusconnect.edu | Password: password123');
     console.log('============================================================\n');
 
-    process.exit(0);
+    if (require.main === module) {
+      process.exit(0);
+    }
+    return true;
   } catch (error) {
     console.error('Error during seeding:', error);
-    process.exit(1);
+    if (require.main === module) {
+      process.exit(1);
+    }
+    throw error;
   }
 };
 
-seedDatabase();
+if (require.main === module) {
+  seedDatabase();
+}
+
+module.exports = seedDatabase;

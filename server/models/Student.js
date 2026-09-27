@@ -87,11 +87,13 @@ const studentSchema = new mongoose.Schema(
     },
     parentName: {
       type: String,
-      required: [true, 'Parent/Guardian Name is required'],
+      default: 'Guardian',
+      trim: true,
     },
     parentPhone: {
       type: String,
-      required: [true, 'Parent/Guardian Phone is required'],
+      default: '',
+      trim: true,
     },
     profilePhoto: {
       type: String,

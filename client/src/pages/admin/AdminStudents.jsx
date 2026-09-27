@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api, { getApiBaseUrl } from '../../services/api';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -260,7 +260,7 @@ const AdminStudents = () => {
           </select>
 
           <a
-            href="http://localhost:5000/api/reports/attendance/csv"
+            href={`${getApiBaseUrl()}/reports/attendance/csv`}
             target="_blank"
             rel="noreferrer"
             className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center space-x-1"
